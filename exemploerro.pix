@@ -1,0 +1,10 @@
+LEDGER teste
+
+LET @nome <- 'Lucas'
+
+IF (@nome == 'Lucas' {
+    $> 'Olá'
+
+}(
+%
+CLOSE

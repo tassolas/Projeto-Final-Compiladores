@@ -1,0 +1,363 @@
+import java_cup.runtime.*;
+
+parser code {:
+public void report_error(String message, Object info) {
+
+    if (Main.listError.hasErrorType("SINTATICO")) {
+        return;
+    }
+
+    if (info instanceof java_cup.runtime.Symbol) {
+
+        java_cup.runtime.Symbol s =
+            (java_cup.runtime.Symbol) info;
+
+        Main.listError.defineError(
+            s.left,
+            s.right + 1,
+            "SINTATICO",
+            "Token inesperado"
+        );
+
+    } else {
+
+        Main.listError.defineError(
+            0,
+            0,
+            "SINTATICO",
+            message
+        );
+    }
+}
+:}
+
+terminal LEDGER, CLOSE, LET, IF, TRUE, FALSE;
+terminal SAIDA_TEXTO;
+terminal ATRIBUICAO;
+terminal SOMA, SUBTRACAO, MULTIPLICACAO, DIVISAO, RESTO;
+terminal IGUAL, DIFERENTE, MAIOR, MENOR, MAIOR_IGUAL, MENOR_IGUAL;
+terminal AND, OR, NOT;
+terminal ELSE;
+terminal ABRE_CHAVE, FECHA_CHAVE, ABRE_PARENTESE, FECHA_PARENTESE;
+
+terminal String VAR_DECIMAL, VAR_INTEIRO, VAR_TEXTO, VAR_BOOLEANO, VAR_CHAVE_PIX, VAR_NULO;
+terminal String NUMERO, STRING, IDENTIFICADOR;
+
+non terminal Node programa, comandos, comando;
+non terminal Node declaracao, atribuicao, saida, condicional;
+non terminal Node variavel, valor, expressao, condicao;
+
+precedence left OR;
+precedence left AND;
+precedence right NOT;
+precedence left IGUAL, DIFERENTE, MAIOR, MENOR, MAIOR_IGUAL, MENOR_IGUAL;
+precedence left SOMA, SUBTRACAO;
+precedence left MULTIPLICACAO, DIVISAO, RESTO;
+
+start with programa;
+
+programa ::=
+    LEDGER IDENTIFICADOR:id comandos:cmds CLOSE
+    {:
+        Node n = new Node("programa");
+        n.add(new Node("LEDGER"));
+        n.add(new Node(id));
+        n.add(cmds);
+        n.add(new Node("CLOSE"));
+        Main.derivationTree = n;
+        RESULT = n;
+    :}
+;
+
+comandos ::=
+      comandos:c comando:cmd
+      {:
+          c.add(cmd);
+          RESULT = c;
+      :}
+    | comando:cmd
+      {:
+          Node n = new Node("comandos");
+          n.add(cmd);
+          RESULT = n;
+      :}
+;
+
+comando ::=
+      declaracao:d
+      {:
+          Node n = new Node("comando");
+          n.add(d);
+          RESULT = n;
+      :}
+    | atribuicao:a
+      {:
+          Node n = new Node("comando");
+          n.add(a);
+          RESULT = n;
+      :}
+    | saida:s
+      {:
+          Node n = new Node("comando");
+          n.add(s);
+          RESULT = n;
+      :}
+    | condicional:c
+      {:
+          Node n = new Node("comando");
+          n.add(c);
+          RESULT = n;
+      :}
+;
+
+declaracao ::=
+      LET variavel:v
+      {:
+          Node n = new Node("declaracao");
+          n.add(new Node("LET"));
+          n.add(v);
+          RESULT = n;
+      :}
+    | LET variavel:v ATRIBUICAO expressao:e
+      {:
+          Node n = new Node("declaracao");
+          n.add(new Node("LET"));
+          n.add(v);
+          n.add(new Node("ATRIBUICAO"));
+          n.add(e);
+          RESULT = n;
+      :}
+;
+
+atribuicao ::=
+    variavel:v ATRIBUICAO expressao:e
+    {:
+        Node n = new Node("atribuicao");
+        n.add(v);
+        n.add(new Node("ATRIBUICAO"));
+        n.add(e);
+        RESULT = n;
+    :}
+;
+
+saida ::=
+    SAIDA_TEXTO expressao:e
+    {:
+        Node n = new Node("saida");
+        n.add(new Node("SAIDA_TEXTO"));
+        n.add(e);
+        RESULT = n;
+    :}
+;
+
+condicional ::=
+      IF ABRE_PARENTESE condicao:c FECHA_PARENTESE ABRE_CHAVE comandos:cmds FECHA_CHAVE
+      {:
+          Node n = new Node("condicional");
+          n.add(new Node("IF"));
+          n.add(c);
+          n.add(cmds);
+          RESULT = n;
+      :}
+    | IF ABRE_PARENTESE condicao:c FECHA_PARENTESE ABRE_CHAVE comandos:cmds1 FECHA_CHAVE ELSE ABRE_CHAVE comandos:cmds2 FECHA_CHAVE
+      {:
+          Node n = new Node("condicional");
+          n.add(new Node("IF"));
+          n.add(c);
+          n.add(cmds1);
+          n.add(new Node("ELSE"));
+          n.add(cmds2);
+          RESULT = n;
+      :}
+;
+
+condicao ::=
+      expressao:e1 IGUAL expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("IGUAL"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 DIFERENTE expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("DIFERENTE"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 MAIOR expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("MAIOR"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 MENOR expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("MENOR"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 MAIOR_IGUAL expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("MAIOR_IGUAL"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 MENOR_IGUAL expressao:e2
+      {:
+          Node n = new Node("condicao");
+          n.add(e1);
+          n.add(new Node("MENOR_IGUAL"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | condicao:c1 AND condicao:c2
+      {:
+          Node n = new Node("condicao");
+          n.add(c1);
+          n.add(new Node("AND"));
+          n.add(c2);
+          RESULT = n;
+      :}
+    | condicao:c1 OR condicao:c2
+      {:
+          Node n = new Node("condicao");
+          n.add(c1);
+          n.add(new Node("OR"));
+          n.add(c2);
+          RESULT = n;
+      :}
+    | NOT condicao:c
+      {:
+          Node n = new Node("condicao");
+          n.add(new Node("NOT"));
+          n.add(c);
+          RESULT = n;
+      :}
+    | ABRE_PARENTESE condicao:c FECHA_PARENTESE
+      {:
+          Node n = new Node("condicao");
+          n.add(c);
+          RESULT = n;
+      :}
+;
+
+expressao ::=
+      expressao:e1 SOMA expressao:e2
+      {:
+          Node n = new Node("expressao");
+          n.add(e1);
+          n.add(new Node("SOMA"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 SUBTRACAO expressao:e2
+      {:
+          Node n = new Node("expressao");
+          n.add(e1);
+          n.add(new Node("SUBTRACAO"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 MULTIPLICACAO expressao:e2
+      {:
+          Node n = new Node("expressao");
+          n.add(e1);
+          n.add(new Node("MULTIPLICACAO"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 DIVISAO expressao:e2
+      {:
+          Node n = new Node("expressao");
+          n.add(e1);
+          n.add(new Node("DIVISAO"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | expressao:e1 RESTO expressao:e2
+      {:
+          Node n = new Node("expressao");
+          n.add(e1);
+          n.add(new Node("RESTO"));
+          n.add(e2);
+          RESULT = n;
+      :}
+    | ABRE_PARENTESE expressao:e FECHA_PARENTESE
+      {:
+          Node n = new Node("expressao");
+          n.add(e);
+          RESULT = n;
+      :}
+    | valor:v
+      {:
+          Node n = new Node("expressao");
+          n.add(v);
+          RESULT = n;
+      :}
+;
+
+valor ::=
+      NUMERO:n
+      {:
+          Node node = new Node("NUMERO: " + n);
+          RESULT = node;
+      :}
+    | STRING:s
+      {:
+          Node node = new Node("STRING: " + s);
+          RESULT = node;
+      :}
+    | TRUE
+      {:
+          Node node = new Node("TRUE");
+          RESULT = node;
+      :}
+    | FALSE
+      {:
+          Node node = new Node("FALSE");
+          RESULT = node;
+      :}
+    | variavel:v
+      {:
+          Node node = new Node("valor");
+          node.add(v);
+          RESULT = node;
+      :}
+;
+
+variavel ::=
+      VAR_DECIMAL:v
+      {:
+          RESULT = new Node("VAR_DECIMAL: " + v);
+      :}
+    | VAR_INTEIRO:v
+      {:
+          RESULT = new Node("VAR_INTEIRO: " + v);
+      :}
+    | VAR_TEXTO:v
+      {:
+          RESULT = new Node("VAR_TEXTO: " + v);
+      :}
+    | VAR_BOOLEANO:v
+      {:
+          RESULT = new Node("VAR_BOOLEANO: " + v);
+      :}
+    | VAR_CHAVE_PIX:v
+      {:
+          RESULT = new Node("VAR_CHAVE_PIX: " + v);
+      :}
+    | VAR_NULO:v
+      {:
+          RESULT = new Node("VAR_NULO: " + v);
+      :}
+;
